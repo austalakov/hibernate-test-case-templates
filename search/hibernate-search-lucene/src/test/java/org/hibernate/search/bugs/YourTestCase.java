@@ -17,30 +17,73 @@ public class YourTestCase extends SearchTestBase {
 
 	@Override
 	public Class<?>[] getAnnotatedClasses() {
-		return new Class<?>[]{ YourAnnotatedEntity.class };
+		return new Class<?>[]{
+				ItemEntity.class, ItemVersionEntity.class, ItemNodeEntity.class };
 	}
 
 	@Test
-	@TestForIssue(jiraKey = "HSEARCH-NNNNN") // Please fill in the JIRA key of your issue
+	@TestForIssue(jiraKey = "HSEARCH-3647") // Please fill in the JIRA key of your issue
 	@SuppressWarnings("unchecked")
 	public void testYourBug() {
-		try ( Session s = getSessionFactory().openSession() ) {
-			YourAnnotatedEntity yourEntity1 = new YourAnnotatedEntity( 1L, "example" );
-			YourAnnotatedEntity yourEntity2 = new YourAnnotatedEntity( 2L, "test" );
-	
+		try ( Session s = getSessionFactory().withOptions().tenantIdentifier("test").openSession() ) {
+
+			// PREPARE
+			ItemEntity item = new ItemEntity( 1L, "example" );
+
+			ItemVersionEntity version = new ItemVersionEntity();
+			version.setItem(item);
+			item.getVersions().add(version);
+
+			ItemNodeEntity node1 = new ItemNodeEntity();
+			node1.setText("foobar");
+			node1.setVersion(version);
+			version.getNodes().add(node1);
+
 			Transaction tx = s.beginTransaction();
-			s.persist( yourEntity1 );
-			s.persist( yourEntity2 );
+			s.persist( item );
 			tx.commit();
-	
-			FullTextSession session = Search.getFullTextSession( s );
-			QueryBuilder qb = session.getSearchFactory().buildQueryBuilder().forEntity( YourAnnotatedEntity.class ).get();
-			Query query = qb.keyword().onField( "name" ).matching( "example" ).createQuery();
-	
-			List<YourAnnotatedEntity> result = (List<YourAnnotatedEntity>) session.createFullTextQuery( query ).list();
-			assertEquals( 1, result.size() );
-			assertEquals( 1l, (long) result.get( 0 ).getId() );
+
+			{
+				FullTextSession session = Search.getFullTextSession(s);
+				QueryBuilder qb = session.getSearchFactory().buildQueryBuilder().forEntity(ItemEntity.class).get();
+				Query query = qb.keyword()
+						.onFields("name", "versions.nodes.text")
+						.matching("foobar")
+						.createQuery();
+
+				List<ItemEntity> result = (List<ItemEntity>) session.createFullTextQuery(query).list();
+				assertEquals(1, result.size());
+				assertEquals(1l, (long) result.get(0).getId());
+			}
+
+			// ADD NEW NODE
+			ItemVersionEntity updatedVersion = new ItemVersionEntity();
+			updatedVersion.setId(version.getId());
+			updatedVersion.setItem(item);
+
+			ItemNodeEntity node2 = new ItemNodeEntity();
+			node2.setText("pizza");
+			node2.setVersion(updatedVersion);
+
+			updatedVersion.getNodes().add(node1);
+			updatedVersion.getNodes().add(node2);
+
+			Transaction tx2 = s.beginTransaction();
+			s.merge( updatedVersion );
+			tx2.commit();
+
+			{
+				FullTextSession session = Search.getFullTextSession(s);
+				QueryBuilder qb = session.getSearchFactory().buildQueryBuilder().forEntity(ItemEntity.class).get();
+				Query query = qb.keyword()
+						.onFields("name", "versions.nodes.text")
+						.matching("foobar")
+						.createQuery();
+
+				List<ItemEntity> result = (List<ItemEntity>) session.createFullTextQuery(query).list();
+				assertEquals(1, result.size());
+				assertEquals(1l, (long) result.get(0).getId());
+			}
 		}
 	}
-
 }
