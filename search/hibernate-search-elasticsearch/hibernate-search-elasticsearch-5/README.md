@@ -1,9 +1,8 @@
-# Hibernate Test Case Templates: Hibernate Search with Elasticsearch 5
+# Content has moved
 
-This directory contains a test case template for Hibernate Search
-backed with an Elasticsearch 5.x cluster.
+Refer instead:
 
-You can run the integration tests:
-* either using the command line with: `mvn verify`: it will automatically launch an instance of Elasticsearch 5;
-* or directly from your IDE. In this case, you need to run an instance of Elasticsearch separately using:
-`mvn elasticsearch:runforked  -Des.setAwait=true`.
+* to [search/hibernate-search-6/orm-elasticsearch](../../hibernate-search-6/orm-elasticsearch) for Hibernate Search 6 in Hibernate ORM backed by Elasticsearch (any version).
+* to [search/hibernate-search-5/elasticsearch-2](../../hibernate-search-5/elasticsearch-2) for Hibernate Search 5 in Hibernate ORM backed by Elasticsearch 2.
+* to [search/hibernate-search-5/elasticsearch-5](../../hibernate-search-5/elasticsearch-5) for Hibernate Search 5 in Hibernate ORM backed by Elasticsearch 5.
+
