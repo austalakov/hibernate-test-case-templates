@@ -15,12 +15,18 @@
  */
 package org.hibernate.bugs;
 
+import jakarta.persistence.Query;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.bugs.entity.Item;
+import org.hibernate.bugs.entity.ItemA;
+import org.hibernate.bugs.entity.ItemB;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
 import org.junit.Test;
+
+import java.util.Collections;
 
 /**
  * This template demonstrates how to develop a test case for Hibernate ORM, using its built-in unit test framework.
@@ -37,6 +43,7 @@ public class ORMUnitTestCase extends BaseCoreFunctionalTestCase {
 	@Override
 	protected Class[] getAnnotatedClasses() {
 		return new Class[] {
+				Item.class, ItemA.class, ItemB.class
 //				Foo.class,
 //				Bar.class
 		};
@@ -73,7 +80,21 @@ public class ORMUnitTestCase extends BaseCoreFunctionalTestCase {
 		Session s = openSession();
 		Transaction tx = s.beginTransaction();
 		// Do stuff...
+		ItemA item = new ItemA();
+		Object id = session.save(item);
 		tx.commit();
+
+		Transaction tx2 = session.beginTransaction();
+
+
+		String queryString = "delete from Item x where id in :ids";
+		Query query = s.createQuery(queryString);
+		query.setParameter("ids", Collections.singletonList(id));
+		query.setHint("org.hibernate.comment", "delete from Item x where id in :ids");
+		query.executeUpdate();
+
+		tx2.commit();
+
 		s.close();
 	}
 }
